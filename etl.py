@@ -8,8 +8,13 @@ import csv
 from sql_queries import *
 
 
-# Process song JSON files from database cursor
 def process_song_file(cur, filepath):
+    """ ETL routine to load song data to postgres database
+
+    Keyword arguments:
+    cur -- cursor from psycopg connection
+    filepath -- filepath to extract song data from JSON store
+    """
     # open song file
     df = pd.read_json(filepath, encoding='utf8', lines=True)
 
@@ -22,8 +27,13 @@ def process_song_file(cur, filepath):
     cur.execute(artist_table_insert, artist_data)
 
 
-# Process log JSON files from database cursor
 def process_log_file(cur, filepath):
+    """ ETL routine to load log data to postgres database
+
+    Keyword arguments:
+    cur -- cursor from psycopg connection
+    filepath -- filepath to extract log data from JSON store
+    """
     # Some static variable to count songplay_id through all files.
     if "songplay_counter" not in process_log_file.__dict__: process_log_file.songplay_counter = 0
     
@@ -90,8 +100,15 @@ def process_log_file(cur, filepath):
     cur.copy_expert("""COPY songplays FROM STDIN WITH (FORMAT CSV)""", buffer)
 
 
-# Traverse storage and process JSON files
 def process_data(cur, conn, filepath, func):
+    """ Traverses storage and process JSON files
+
+    Keyword arguments:
+    cur -- cursor from psycopg connection
+    conn -- connection to postgres database held by the psycopg driver
+    filepath -- base filepath directory where JSON files should be processed
+    func -- ETL routine to process JSON files
+    """
     # get all files matching extension from directory
     all_files = []
     for root, dirs, files in os.walk(filepath):
@@ -111,13 +128,18 @@ def process_data(cur, conn, filepath, func):
 
 
 def main():
+    """
+    - Fetch connection and cursor to postgres local database.
+
+    - Process songs and logs JSON stores applying ETL routines.
+    """
     conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=student password=student")
     cur = conn.cursor()
 
     process_data(cur, conn, filepath='data/song_data', func=process_song_file)
     process_data(cur, conn, filepath='data/log_data', func=process_log_file)
 
-    conn.close()
+    conn.close()    
 
 
 if __name__ == "__main__":
